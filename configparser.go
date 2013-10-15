@@ -128,10 +128,10 @@ func (c *ConfigData) Interpolation () error {
                     refsection = section
                 }
                 if c.HasSection(refsection) {
-                    if c.HasSecOpt(refsection, key) {
+                    if c.HasSecOpt(refsection, irefval.Value) {
                         c.Interpolate(section, key, refsection, irefval.Value)
                     } else { 
-                        etext := fmt.Sprintf("Cannot interpolate %s, %s section does not contain key %s.", refsection, key)
+                        etext := fmt.Sprintf("Cannot interpolate %s, %s section does not contain key %s.", key, refsection, irefval.Value)
                         return errors.New(etext)
                     }
                 } else {
