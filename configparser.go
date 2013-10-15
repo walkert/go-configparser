@@ -57,7 +57,7 @@ type ConfigData struct {
 func NewConfigData () ConfigData {
     secdata := make(map[string]SectionData)
     regexps := make(map[string]*regexp.Regexp)
-    regexps["inter"] = regexp.MustCompile(`^%(g|l)\((.*)\)`)
+    regexps["inter"] = regexp.MustCompile(`^%([a-z])\((.*)\)`)
     regexps["secMatch"] = regexp.MustCompile(`^\[(.*)\]$`)
     regexps["confPair"] = regexp.MustCompile(`^(\w*)\s+=\s+(.*)`)
     return ConfigData{secdata, regexps}
@@ -153,6 +153,7 @@ func (c *ConfigData) Interpolate (section, key, refsection, irefkey string) {
     
 func Parse (fname string) (ConfigData, error) {
     var returnedError error = nil
+    blank := NewConfigData()
     cd := NewConfigData()
     fd, err := os.Open(fname)
     if err != nil {
@@ -170,7 +171,7 @@ func Parse (fname string) (ConfigData, error) {
             if cd.HasSection(section) {
                 etext := fmt.Sprintf("Duplicate section found: %s", section)
                 returnedError = errors.New(etext)
-                return cd, returnedError
+                return blank, returnedError
             } else {
                 cd.AddSection(section)
             }
@@ -181,11 +182,11 @@ func Parse (fname string) (ConfigData, error) {
             if cd.HasSecOpt(section, key) {
                 etext := fmt.Sprintf("Duplicate option %s found in section %s.", key, section)
                 returnedError = errors.New(etext)
-                return cd, returnedError
+                return blank, returnedError
             } else {
                 returnedError = cd.AddSecOpt(section, key, val)
                 if returnedError != nil {
-                    return cd, returnedError
+                    return blank, returnedError
                 }
             }
         }
