@@ -176,6 +176,10 @@ func Parse (fname string) (ConfigData, error) {
                 cd.AddSection(section)
             }
         case cd.Regexp("confPair").MatchString(line):
+            if section == "" {
+                etext := fmt.Sprintf("Option pair not declared within a section: %s", line)
+                return blank, errors.New(etext)
+            }
             pair := cd.Regexp("confPair").FindStringSubmatch(line)
             key := pair[1]
             val := pair[2]
