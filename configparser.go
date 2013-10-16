@@ -18,14 +18,6 @@ type SectionData struct {
     Interpolate map[string]InterpolateObj
 }
 
-func (c *ConfigData) HasOption (section, option string) bool {
-    if _, ok := c.Sections[section].Options[option] ; ok {
-        return true
-    } else {
-        return false
-    }
-}
-
 func addOption (c *ConfigData, section, option, value string) {
     c.Sections[section].Options[option] = value
 }
@@ -63,25 +55,24 @@ func (c *ConfigData) HasSection (section string) bool {
         return false
     }
 }
+func (c *ConfigData) HasOption (section, option string) bool {
+    if _, ok := c.Sections[section].Options[option] ; ok {
+        return true
+    } else {
+        return false
+    }
+}
 
 func (c *ConfigData) regexp (regexp string) *regexp.Regexp {
     return c.Regexps[regexp]
 }
 
-func (c *ConfigData) GetSecOpt (section, option string) string {
+func (c *ConfigData) GetOption (section, option string) string {
     return c.Sections[section].Options[option]
 }
 
 func (c *ConfigData) setSecOpt (section, option, value string) {
     c.Sections[section].Options[option] = value
-}
-
-func (c *ConfigData) HasSecOpt (section, option string) bool {
-    if c.HasOption(section, option) {
-        return true
-    } else {
-        return false
-    }
 }
 
 func (c *ConfigData) addSecOpt (section, key, value string) error {
@@ -117,7 +108,7 @@ func (c *ConfigData) interpolation () error {
             for key, irefval := range(c.Sections[section].Interpolate) {
                 refsection = irefval.RefSection
                 if c.HasSection(refsection) {
-                    if c.HasSecOpt(refsection, irefval.Value) {
+                    if c.HasOption(refsection, irefval.Value) {
                         c.interpolate(section, key, refsection, irefval.Value)
                     } else { 
                         etext := fmt.Sprintf("Cannot interpolate %s, %s section does not contain key %s.", key, refsection, irefval.Value)
@@ -134,8 +125,8 @@ func (c *ConfigData) interpolation () error {
 }
 
 func (c *ConfigData) interpolate (section, key, refsection, irefkey string) {
-    current := c.GetSecOpt(section, key)
-    ival := c.GetSecOpt(refsection, irefkey)
+    current := c.GetOption(section, key)
+    ival := c.GetOption(refsection, irefkey)
     replacement := c.regexp("inter").ReplaceAllLiteralString(current, ival)
     c.setSecOpt(section, key, replacement)
 }
@@ -172,7 +163,7 @@ func Parse (fname string) (ConfigData, error) {
             pair := cd.regexp("confPair").FindStringSubmatch(line)
             key := pair[1]
             val := pair[2]
-            if cd.HasSecOpt(section, key) {
+            if cd.HasOption(section, key) {
                 etext := fmt.Sprintf("Duplicate option %s found in section %s.", key, section)
                 returnedError = errors.New(etext)
                 return blank, returnedError
