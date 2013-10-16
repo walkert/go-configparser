@@ -10,7 +10,7 @@ import (
 
 type InterpolateObj struct {
     Value string
-    Global bool
+    RefSection string
 }
 
 type SectionData struct {
@@ -32,19 +32,12 @@ func AddOption (c *ConfigData, section, option, value string) {
 
 func AddInter (c *ConfigData, section, option string, idata []string) error {
     var retval error = nil
-    var global bool
-    designator := idata[0]
+    refsection := idata[0]
     value := idata[1]
-    switch {
-        case designator == "g":
-            global = true
-        case designator == "l":
-            global = false
-        default:
-            etext := fmt.Sprintf("Invalid interpolation designator: %s", designator)
-            return errors.New(etext)
+    if refsection == "local" {
+        refsection = section
     }
-    inter := InterpolateObj{value, global}
+    inter := InterpolateObj{value, refsection}
     c.Sections[section].Interpolate[option] = inter
     return retval
 }
@@ -57,7 +50,7 @@ type ConfigData struct {
 func NewConfigData () ConfigData {
     secdata := make(map[string]SectionData)
     regexps := make(map[string]*regexp.Regexp)
-    regexps["inter"] = regexp.MustCompile(`^%([a-z])\((.*)\)`)
+    regexps["inter"] = regexp.MustCompile(`%(\w*)\((.*)\)`)
     regexps["secMatch"] = regexp.MustCompile(`^\[(.*)\]$`)
     regexps["confPair"] = regexp.MustCompile(`^(\w*)\s+=\s+(.*)`)
     return ConfigData{secdata, regexps}
@@ -122,11 +115,7 @@ func (c *ConfigData) Interpolation () error {
     for _, section := range(c.GetSections()) {
         if len(c.Sections[section].Interpolate) > 0 {
             for key, irefval := range(c.Sections[section].Interpolate) {
-                if irefval.Global {
-                    refsection = "global"
-                } else {
-                    refsection = section
-                }
+                refsection = irefval.RefSection
                 if c.HasSection(refsection) {
                     if c.HasSecOpt(refsection, irefval.Value) {
                         c.Interpolate(section, key, refsection, irefval.Value)
@@ -196,6 +185,9 @@ func Parse (fname string) (ConfigData, error) {
         }
     }
     returnedError = cd.Interpolation()
+    if returnedError != nil {
+        cd = blank
+    }
     return cd, returnedError
 }
 
