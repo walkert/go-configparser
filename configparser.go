@@ -18,7 +18,7 @@ type SectionData struct {
     Interpolate map[string]InterpolateObj
 }
 
-func HasOption (c *ConfigData, section, option string) bool {
+func (c *ConfigData) HasOption (section, option string) bool {
     if _, ok := c.Sections[section].Options[option] ; ok {
         return true
     } else {
@@ -26,11 +26,11 @@ func HasOption (c *ConfigData, section, option string) bool {
     }
 }
 
-func AddOption (c *ConfigData, section, option, value string) {
+func addOption (c *ConfigData, section, option, value string) {
     c.Sections[section].Options[option] = value
 }
 
-func AddInter (c *ConfigData, section, option string, idata []string) error {
+func addInter (c *ConfigData, section, option string, idata []string) error {
     var retval error = nil
     refsection := idata[0]
     value := idata[1]
@@ -64,7 +64,7 @@ func (c *ConfigData) HasSection (section string) bool {
     }
 }
 
-func (c *ConfigData) Regexp (regexp string) *regexp.Regexp {
+func (c *ConfigData) regexp (regexp string) *regexp.Regexp {
     return c.Regexps[regexp]
 }
 
@@ -72,29 +72,29 @@ func (c *ConfigData) GetSecOpt (section, option string) string {
     return c.Sections[section].Options[option]
 }
 
-func (c *ConfigData) SetSecOpt (section, option, value string) {
+func (c *ConfigData) setSecOpt (section, option, value string) {
     c.Sections[section].Options[option] = value
 }
 
 func (c *ConfigData) HasSecOpt (section, option string) bool {
-    if HasOption(c, section, option) {
+    if c.HasOption(section, option) {
         return true
     } else {
         return false
     }
 }
 
-func (c *ConfigData) AddSecOpt (section, key, value string) error {
+func (c *ConfigData) addSecOpt (section, key, value string) error {
     var retval error = nil
-    AddOption(c, section, key, value)
-    igroup := c.Regexp("inter").FindStringSubmatch(value)
+    addOption(c, section, key, value)
+    igroup := c.regexp("inter").FindStringSubmatch(value)
     if len(igroup) == 3 {
-        retval = AddInter(c, section, key, igroup[1:])
+        retval = addInter(c, section, key, igroup[1:])
     }
     return retval
 }
 
-func (c *ConfigData) AddSection (section string) {
+func (c *ConfigData) addSection (section string) {
     options := make(map[string]string)
     interpolate := make(map[string]InterpolateObj)
     sd := SectionData{options, interpolate}
@@ -109,7 +109,7 @@ func (c *ConfigData) GetSections () []string {
     return optionList
 }
 
-func (c *ConfigData) Interpolation () error {
+func (c *ConfigData) interpolation () error {
     var retval error = nil
     var refsection string
     for _, section := range(c.GetSections()) {
@@ -118,7 +118,7 @@ func (c *ConfigData) Interpolation () error {
                 refsection = irefval.RefSection
                 if c.HasSection(refsection) {
                     if c.HasSecOpt(refsection, irefval.Value) {
-                        c.Interpolate(section, key, refsection, irefval.Value)
+                        c.interpolate(section, key, refsection, irefval.Value)
                     } else { 
                         etext := fmt.Sprintf("Cannot interpolate %s, %s section does not contain key %s.", key, refsection, irefval.Value)
                         return errors.New(etext)
@@ -133,11 +133,11 @@ func (c *ConfigData) Interpolation () error {
     return retval
 }
 
-func (c *ConfigData) Interpolate (section, key, refsection, irefkey string) {
+func (c *ConfigData) interpolate (section, key, refsection, irefkey string) {
     current := c.GetSecOpt(section, key)
     ival := c.GetSecOpt(refsection, irefkey)
-    replacement := c.Regexp("inter").ReplaceAllLiteralString(current, ival)
-    c.SetSecOpt(section, key, replacement)
+    replacement := c.regexp("inter").ReplaceAllLiteralString(current, ival)
+    c.setSecOpt(section, key, replacement)
 }
     
 func Parse (fname string) (ConfigData, error) {
@@ -155,21 +155,21 @@ func Parse (fname string) (ConfigData, error) {
     for scanner.Scan() {
         line := scanner.Text()
         switch {
-        case cd.Regexp("secMatch").MatchString(line):
-            section = cd.Regexp("secMatch").FindStringSubmatch(line)[1]
+        case cd.regexp("secMatch").MatchString(line):
+            section = cd.regexp("secMatch").FindStringSubmatch(line)[1]
             if cd.HasSection(section) {
                 etext := fmt.Sprintf("Duplicate section found: %s", section)
                 returnedError = errors.New(etext)
                 return blank, returnedError
             } else {
-                cd.AddSection(section)
+                cd.addSection(section)
             }
-        case cd.Regexp("confPair").MatchString(line):
+        case cd.regexp("confPair").MatchString(line):
             if section == "" {
                 etext := fmt.Sprintf("Option pair not declared within a section: %s", line)
                 return blank, errors.New(etext)
             }
-            pair := cd.Regexp("confPair").FindStringSubmatch(line)
+            pair := cd.regexp("confPair").FindStringSubmatch(line)
             key := pair[1]
             val := pair[2]
             if cd.HasSecOpt(section, key) {
@@ -177,14 +177,14 @@ func Parse (fname string) (ConfigData, error) {
                 returnedError = errors.New(etext)
                 return blank, returnedError
             } else {
-                returnedError = cd.AddSecOpt(section, key, val)
+                returnedError = cd.addSecOpt(section, key, val)
                 if returnedError != nil {
                     return blank, returnedError
                 }
             }
         }
     }
-    returnedError = cd.Interpolation()
+    returnedError = cd.interpolation()
     if returnedError != nil {
         cd = blank
     }
