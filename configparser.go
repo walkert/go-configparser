@@ -9,17 +9,17 @@ import (
 )
 
 type InterpolateObj struct {
-    Value string
-    RefSection string
+    value string
+    refSection string
 }
 
 type SectionData struct {
-    Options map[string]string
-    Interpolate map[string]InterpolateObj
+    options map[string]string
+    interpolate map[string]InterpolateObj
 }
 
 func addOption (c *ConfigData, section, option, value string) {
-    c.Sections[section].Options[option] = value
+    c.sections[section].options[option] = value
 }
 
 func addInter (c *ConfigData, section, option string, idata []string) error {
@@ -30,13 +30,13 @@ func addInter (c *ConfigData, section, option string, idata []string) error {
         refsection = section
     }
     inter := InterpolateObj{value, refsection}
-    c.Sections[section].Interpolate[option] = inter
+    c.sections[section].interpolate[option] = inter
     return retval
 }
 
 type ConfigData struct {
-    Sections map[string]SectionData
-    Regexps map[string]*regexp.Regexp
+    sections map[string]SectionData
+    regexps map[string]*regexp.Regexp
 }
 
 func NewConfigData () ConfigData {
@@ -49,14 +49,14 @@ func NewConfigData () ConfigData {
 }
 
 func (c *ConfigData) HasSection (section string) bool {
-    if _, ok := c.Sections[section] ; ok {
+    if _, ok := c.sections[section] ; ok {
         return true
     } else {
         return false
     }
 }
 func (c *ConfigData) HasOption (section, option string) bool {
-    if _, ok := c.Sections[section].Options[option] ; ok {
+    if _, ok := c.sections[section].options[option] ; ok {
         return true
     } else {
         return false
@@ -64,15 +64,15 @@ func (c *ConfigData) HasOption (section, option string) bool {
 }
 
 func (c *ConfigData) regexp (regexp string) *regexp.Regexp {
-    return c.Regexps[regexp]
+    return c.regexps[regexp]
 }
 
 func (c *ConfigData) GetOption (section, option string) string {
-    return c.Sections[section].Options[option]
+    return c.sections[section].options[option]
 }
 
 func (c *ConfigData) setSecOpt (section, option, value string) {
-    c.Sections[section].Options[option] = value
+    c.sections[section].options[option] = value
 }
 
 func (c *ConfigData) addSecOpt (section, key, value string) error {
@@ -89,12 +89,12 @@ func (c *ConfigData) addSection (section string) {
     options := make(map[string]string)
     interpolate := make(map[string]InterpolateObj)
     sd := SectionData{options, interpolate}
-    c.Sections[section] = sd
+    c.sections[section] = sd
 }
 
-func (c *ConfigData) GetSections () []string {
-    optionList := make([]string, len(c.Sections))
-    for key, _ := range(c.Sections) {
+func (c *ConfigData) Getsections () []string {
+    optionList := make([]string, len(c.sections))
+    for key, _ := range(c.sections) {
         optionList = append(optionList, key)
     }
     return optionList
@@ -103,15 +103,15 @@ func (c *ConfigData) GetSections () []string {
 func (c *ConfigData) interpolation () error {
     var retval error = nil
     var refsection string
-    for _, section := range(c.GetSections()) {
-        if len(c.Sections[section].Interpolate) > 0 {
-            for key, irefval := range(c.Sections[section].Interpolate) {
-                refsection = irefval.RefSection
+    for _, section := range(c.Getsections()) {
+        if len(c.sections[section].interpolate) > 0 {
+            for key, irefval := range(c.sections[section].interpolate) {
+                refsection = irefval.refSection
                 if c.HasSection(refsection) {
-                    if c.HasOption(refsection, irefval.Value) {
-                        c.interpolate(section, key, refsection, irefval.Value)
+                    if c.HasOption(refsection, irefval.value) {
+                        c.interpolate(section, key, refsection, irefval.value)
                     } else { 
-                        etext := fmt.Sprintf("Cannot interpolate %s, %s section does not contain key %s.", key, refsection, irefval.Value)
+                        etext := fmt.Sprintf("Cannot interpolate %s, %s section does not contain key %s.", key, refsection, irefval.value)
                         return errors.New(etext)
                     }
                 } else {
@@ -183,10 +183,36 @@ func Parse (fname string) (ConfigData, error) {
 }
 
 func (c *ConfigData) Printer () {
-    for section, secdata := range(c.Sections) {
+    for section, secdata := range(c.sections) {
         fmt.Println("Section:", section)
-        for option, value := range(secdata.Options) {
+        for option, value := range(secdata.options) {
             fmt.Printf("Option: %s == %s\n", option, value)
         }
     }
+}
+
+func (c *ConfigData) GetConfigMap () (confmap map[string]map[string]string) {
+    confmap = make(map[string]map[string]string)
+    for section, secdata := range(c.sections) {
+        confmap[section] = make(map[string]string)
+        for option, value := range(secdata.options) {
+            confmap[section][option] = value
+        }
+    }
+    return
+}
+
+func (c *ConfigData) GetFlatConfigMap () (retval error, flatmap map[string]string) {
+    flatmap = make(map[string]string)
+    for _, secdata := range(c.sections) {
+        for option, value := range(secdata.options) {
+            if _, ok := flatmap[option] ; ok {
+                etext := fmt.Sprintf("Cannot create flat config map, duplicate option found: %s.", option)
+                retval = errors.New(etext)
+                return 
+            }
+            flatmap[option] = value
+        }
+    }
+    return
 }
