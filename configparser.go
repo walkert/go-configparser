@@ -22,8 +22,8 @@ func addOption (c *ConfigData, section, option, value string) {
     c.sections[section].options[option] = value
 }
 
-func addInter (c *ConfigData, section, option string, idata []string) error {
-    var retval error = nil
+func addInter (c *ConfigData, section, option string, idata []string) (retval error) {
+    retval = nil
     refsection := idata[0]
     value := idata[1]
     if refsection == "local" {
@@ -31,7 +31,7 @@ func addInter (c *ConfigData, section, option string, idata []string) error {
     }
     inter := InterpolateObj{value, refsection}
     c.sections[section].interpolate[option] = inter
-    return retval
+    return
 }
 
 type ConfigData struct {
@@ -83,8 +83,8 @@ func (c *ConfigData) setSecOpt (section, option, value string) {
     c.sections[section].options[option] = value
 }
 
-func (c *ConfigData) addSecOpt (section, key, value string) error {
-    var retval error = nil
+func (c *ConfigData) addSecOpt (section, key, value string) (retval error) {
+    retval = nil
     addOption(c, section, key, value)
     igroup := c.regexp("inter").FindStringSubmatch(value)
     if len(igroup) == 3 {
@@ -100,12 +100,12 @@ func (c *ConfigData) addSection (section string) {
     c.sections[section] = sd
 }
 
-func (c *ConfigData) Getsections () []string {
-    optionList := make([]string, len(c.sections))
+func (c *ConfigData) Getsections () (optionList []string) {
+    optionList = make([]string, len(c.sections))
     for key, _ := range(c.sections) {
         optionList = append(optionList, key)
     }
-    return optionList
+    return
 }
 
 func (c *ConfigData) interpolation () error {
@@ -188,15 +188,6 @@ func Parse (fname string) (ConfigData, error) {
         cd = blank
     }
     return cd, returnedError
-}
-
-func (c *ConfigData) Printer () {
-    for section, secdata := range(c.sections) {
-        fmt.Println("Section:", section)
-        for option, value := range(secdata.options) {
-            fmt.Printf("Option: %s == %s\n", option, value)
-        }
-    }
 }
 
 func (c *ConfigData) GetConfigMap () (confmap map[string]map[string]string) {
