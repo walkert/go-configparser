@@ -67,8 +67,16 @@ func (c *ConfigData) regexp (regexp string) *regexp.Regexp {
     return c.regexps[regexp]
 }
 
-func (c *ConfigData) GetOption (section, option string) string {
-    return c.sections[section].options[option]
+func (c *ConfigData) GetOption (section, option string) (value string, retval error) {
+    retval = nil
+    value = ""
+    if c.HasOption(section, option) {
+        value = c.sections[section].options[option]
+    } else {
+        etext := fmt.Sprintf("Option %s does not exist in section %s.\n", option, section)
+        retval = errors.New(etext)
+    }
+    return
 }
 
 func (c *ConfigData) setSecOpt (section, option, value string) {
@@ -125,8 +133,8 @@ func (c *ConfigData) interpolation () error {
 }
 
 func (c *ConfigData) interpolate (section, key, refsection, irefkey string) {
-    current := c.GetOption(section, key)
-    ival := c.GetOption(refsection, irefkey)
+    current, _ := c.GetOption(section, key)
+    ival, _ := c.GetOption(refsection, irefkey)
     replacement := c.regexp("inter").ReplaceAllLiteralString(current, ival)
     c.setSecOpt(section, key, replacement)
 }
@@ -202,7 +210,7 @@ func (c *ConfigData) GetConfigMap () (confmap map[string]map[string]string) {
     return
 }
 
-func (c *ConfigData) GetFlatConfigMap () (retval error, flatmap map[string]string) {
+func (c *ConfigData) GetFlatConfigMap () (flatmap map[string]string, retval error) {
     flatmap = make(map[string]string)
     for _, secdata := range(c.sections) {
         for option, value := range(secdata.options) {
