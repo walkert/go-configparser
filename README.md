@@ -10,10 +10,12 @@ A simple config file parser library for Go.
 
 `go-configparser` expects config files in the following format:
 
----------
+```plain
     [section heading]
     option1 = value1
     option2 = value2
+```
+
 
 All other lines are ignored - as are any options not found within a section.
 
@@ -23,18 +25,20 @@ See examples/basic.cfg.
 
 Options from any section can be referenced by using the following format:
 
----------
+```plain
     %<setion>(<option>)
+```
 
 Example:
 
----------
+```plain
     [global]
     basedir = /opt/myapp
     logs = %local(basedir)/logs
 
     [app2]
     bindir = %global(basedir)/bin
+```
 
 See examples/interpolate.cfg
 
@@ -46,7 +50,7 @@ $ go get -u github.com/walkert/go-configparser
 
 ## Quickstart
 
----------
+```go
     package main
 
     import (
@@ -65,5 +69,6 @@ $ go get -u github.com/walkert/go-configparser
             fmt.Println(value)
         }
     }
+```
 
 See examples/configparser_example.go for more details.
