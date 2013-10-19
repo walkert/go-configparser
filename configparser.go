@@ -56,8 +56,12 @@ func (c *ConfigData) HasSection(section string) bool {
 	}
 }
 func (c *ConfigData) HasOption(section, option string) bool {
-	if _, ok := c.sections[section].options[option]; ok {
-		return true
+	if c.HasSection(section) {
+		if _, ok := c.sections[section].options[option]; ok {
+			return true
+		} else {
+			return false
+		}
 	} else {
 		return false
 	}
@@ -70,10 +74,15 @@ func (c *ConfigData) regexp(regexp string) *regexp.Regexp {
 func (c *ConfigData) GetOption(section, option string) (value string, retval error) {
 	retval = nil
 	value = ""
-	if c.HasOption(section, option) {
-		value = c.sections[section].options[option]
+	if c.HasSection(section) {
+		if c.HasOption(section, option) {
+			value = c.sections[section].options[option]
+		} else {
+			etext := fmt.Sprintf("Option '%s' does not exist in section '%s'.\n", option, section)
+			retval = errors.New(etext)
+		}
 	} else {
-		etext := fmt.Sprintf("Option %s does not exist in section %s.\n", option, section)
+		etext := fmt.Sprintf("Section '%s' does not exist.\n", section)
 		retval = errors.New(etext)
 	}
 	return
