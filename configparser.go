@@ -128,11 +128,11 @@ func (c *ConfigData) interpolation() error {
 					if c.HasOption(refsection, irefval.value) {
 						c.interpolate(section, key, refsection, irefval.value)
 					} else {
-						etext := fmt.Sprintf("Cannot interpolate %s, %s section does not contain key %s.", key, refsection, irefval.value)
+						etext := fmt.Sprintf("Cannot interpolate '%s', '%s' section does not contain key '%s'.", key, refsection, irefval.value)
 						return errors.New(etext)
 					}
 				} else {
-					etext := fmt.Sprintf("Cannot interpolate %s, %s section not defined.", key, refsection)
+					etext := fmt.Sprintf("Cannot interpolate '%s', '%s' section not defined.", key, refsection)
 					return errors.New(etext)
 				}
 			}
@@ -166,7 +166,7 @@ func Parse(fname string) (ConfigData, error) {
 		case cd.regexp("secMatch").MatchString(line):
 			section = cd.regexp("secMatch").FindStringSubmatch(line)[1]
 			if cd.HasSection(section) {
-				etext := fmt.Sprintf("Duplicate section found: %s", section)
+				etext := fmt.Sprintf("Duplicate section found: '%s'", section)
 				retval = errors.New(etext)
 				return blank, retval
 			} else {
@@ -174,14 +174,14 @@ func Parse(fname string) (ConfigData, error) {
 			}
 		case cd.regexp("confPair").MatchString(line):
 			if section == "" {
-				etext := fmt.Sprintf("Option pair not declared within a section: %s", line)
+				etext := fmt.Sprintf("Option pair not declared within a section: '%s'", line)
 				return blank, errors.New(etext)
 			}
 			pair := cd.regexp("confPair").FindStringSubmatch(line)
 			key := pair[1]
 			val := pair[2]
 			if cd.HasOption(section, key) {
-				etext := fmt.Sprintf("Duplicate option %s found in section %s.", key, section)
+				etext := fmt.Sprintf("Duplicate option '%s' found in section '%s'.", key, section)
 				retval = errors.New(etext)
 				return blank, retval
 			} else {
