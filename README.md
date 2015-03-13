@@ -6,6 +6,8 @@ A simple config file parser library for Go.
 
 `go-configparser` provides similar functionality to Python's ConfigParser module and deals specifically with settings files in the style of .gitconfig.
 
+Options can also be registered in a similar manner to the flag library in order to provide an explicit set of config requirements.
+
 ## Config file format
 
 `go-configparser` expects config files in the following format:
@@ -26,7 +28,7 @@ See examples/basic.cfg.
 Options from any section can be referenced by using the following format:
 
 ```plain
-    %<setion>(<option>)
+    %<section>(<option>)
 ```
 
 Example:
@@ -60,14 +62,44 @@ $ go get -u github.com/walkert/go-configparser
     )
 
     func main() {
-        // Create a new ConfigData object
-        cd, err := configparser.Parse("/etc/config.cfg")
-        
+        // Create a new ConfigParser
+        cp := configparser.NewConfigParser("/etc/config.cfg")
+
         // See if the 'global' section exists, and if it does, print the 'main' option value
-        if cd.HasSection("global") {
-            value, _ := cd.GetOption("global", "main")
+        if cp.HasSection("global") {
+            value, _ := cp.GetOption("global", "main")
             fmt.Println(value)
         }
+    }
+```
+
+To instead register options prior to parsing:
+
+```go
+    package main
+
+    import (
+        "fmt"
+        "github.com/walkert/go-configparser"
+        "os"
+    )
+
+    func main() {
+        // Create a new ConfigParser
+        cp := configparser.NewConfigParser("/etc/config.cfg")
+
+        // Register an option called 'debug' in the 'main' section
+        // with a default value of 'false' and a required value of 'true'.
+        // Required options will cause an error if not present.
+        debug := cp.BoolOption("debug", "main", false, true)
+
+        err := cp.Parse()
+
+        if err == nil {
+            fmt.Println("Error parsing config file: ", err)
+        }
+
+        fmt.Println("Debug has been set to: ", *debug)
     }
 ```
 
